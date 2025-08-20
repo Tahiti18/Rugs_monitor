@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI
 from sqlalchemy import text
-from db_sql import get_engine, init_db
+from .db_sql import get_engine, init_db
 
 app = FastAPI(title="Rugs Monitor API", version="0.1.0")
 

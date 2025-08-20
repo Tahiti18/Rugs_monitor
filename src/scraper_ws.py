@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
-from db_sql import init_db, get_engine
+from .db_sql import init_db, get_engine
 from sqlalchemy import text
 
 load_dotenv()
