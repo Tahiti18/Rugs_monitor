@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rugs Monitor Dashboard</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Arial, sans-serif; margin: 2rem; }
+    h1 { font-size: 1.8rem; color: #0b5cff; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .5rem; border-bottom: 1px solid #eee; text-align: left; }
+    .muted { color: #666; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <h1>Rugs Monitor Dashboard</h1>
+  <div class="card">
+    <h2>Tail Frequencies</h2>
+    <pre id="tail" class="mono"></pre>
+  </div>
+  <div class="card">
+    <h2>Recent Rounds</h2>
+    <table>
+      <thead><tr><th>Round</th><th>Timestamp</th><th>Bust ×</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="muted">Data from /stats/recent and /stats/tail</p>
+  </div>
+
+<script>
+const API_BASE = (new URLSearchParams(location.search).get('api')) || '/';
+async function loadTail() {
+  const r = await fetch(API_BASE + 'stats/tail');
+  const j = await r.json();
+  document.getElementById('tail').textContent = JSON.stringify(j, null, 2);
+}
+async function loadRecent() {
+  const r = await fetch(API_BASE + 'stats/recent?limit=50');
+  const rows = await r.json();
+  const tbody = document.getElementById('rows');
+  tbody.innerHTML = rows.map(x => `<tr><td>${x.round_id}</td><td>${x.timestamp}</td><td>${x.bust_multiplier}</td></tr>`).join('');
+}
+loadTail(); loadRecent();
+setInterval(() => { loadTail(); loadRecent(); }, 5000);
+</script>
+</body>
+</html>
