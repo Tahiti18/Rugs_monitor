@@ -1,24 +1,25 @@
 # src/api.py
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
 
 from src.db import get_engine, init_db
 
 app = FastAPI(title="Rugs Monitor API", version="1.0.0")
 
-# --- CORS setup ---
+# Allow your Netlify site to call this API
+NETLIFY_ORIGINS: List[str] = [
+    "https://rugsmonitor.netlify.app",
+    "https://warm-travesseiro-859d96.netlify.app",  # your earlier preview
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://rugsmonitor.netlify.app",          # your Netlify frontend
-        "https://warm-travesseiro-8599d9f6.netlify.app",  # alt/test site
-        "http://localhost:3000",                    # local dev
-    ],
+    allow_origins=NETLIFY_ORIGINS + ["http://localhost:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,8 +27,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 def _startup() -> None:
-    db_url = os.environ["DATABASE_URL"]
-    engine = get_engine(db_url)
+    db_url = os.environ["DATABASE_URL"]  # Railway service var
+    engine: Engine = get_engine(db_url)
     init_db(engine)
     app.state.engine = engine
 
@@ -45,7 +46,7 @@ def health() -> Dict[str, bool]:
 
 @app.get("/stats/tail")
 def stats_tail() -> Dict[str, Any]:
-    eng = app.state.engine
+    eng: Engine = app.state.engine
     with eng.connect() as conn:
         n = conn.execute(text("SELECT COUNT(*) FROM rounds")).scalar_one()
         if n == 0:
@@ -67,7 +68,7 @@ def stats_tail() -> Dict[str, Any]:
 
 @app.get("/stats/recent")
 def stats_recent(limit: int = Query(100, ge=1, le=1000)) -> JSONResponse:
-    eng = app.state.engine
+    eng: Engine = app.state.engine
     with eng.connect() as conn:
         rows = conn.execute(text(
             "SELECT id, round_id, timestamp, bust_multiplier, server_seed_hash, client_seed, nonce "
