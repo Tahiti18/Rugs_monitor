@@ -1,19 +1,31 @@
 # src/db.py
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
+from typing import Any
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 
-Base = declarative_base()
+def get_engine(db_url: str) -> Engine:
+    # Pool tuned for Railway; adjust if you ever need more concurrency
+    return create_engine(
+        db_url,
+        pool_pre_ping=True,
+        pool_size=3,
+        max_overflow=2,
+        future=True,
+    )
 
-def get_engine(database_url: str | None = None):
-    if database_url is None:
-        database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        raise RuntimeError("DATABASE_URL is not set")
-    # future=True for 2.0 style, pool_pre_ping avoids stale sockets
-    return create_engine(database_url, pool_pre_ping=True, future=True)
-
-def init_db(engine):
-    # Import models to register metadata, then create tables
-    from src import models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
+def init_db(engine: Engine) -> None:
+    # Create table if it doesn't exist
+    ddl = """
+    CREATE TABLE IF NOT EXISTS rounds (
+        id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+        round_id TEXT UNIQUE,
+        timestamp TEXT,
+        bust_multiplier REAL,
+        raw_json TEXT,
+        server_seed_hash TEXT,
+        client_seed TEXT,
+        nonce INTEGER
+    );
+    """
+    with engine.begin() as conn:
+        conn.execute(text(ddl))
