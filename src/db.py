@@ -1,22 +1,19 @@
-from sqlalchemy import create_engine, MetaData
-from sqlalchemy.orm import sessionmaker
+# src/db.py
 import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+Base = declarative_base()
 
-# SQLAlchemy engine
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+def get_engine(database_url: str | None = None):
+    if database_url is None:
+        database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set")
+    # future=True for 2.0 style, pool_pre_ping avoids stale sockets
+    return create_engine(database_url, pool_pre_ping=True, future=True)
 
-# Session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-metadata = MetaData()
-
-def get_engine():
-    """Return the SQLAlchemy engine for database connections"""
-    return engine
-
-def init_db():
-    """Initialize database (create tables if needed)"""
-    from src.models import Base  # Make sure you have a models.py with Base
+def init_db(engine):
+    # Import models to register metadata, then create tables
+    from src import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
