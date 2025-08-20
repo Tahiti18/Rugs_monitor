@@ -4,11 +4,25 @@ from typing import Any, Dict
 
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from src.db import get_engine, init_db
 
 app = FastAPI(title="Rugs Monitor API", version="1.0.0")
+
+# --- CORS setup ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://rugsmonitor.netlify.app",          # your Netlify frontend
+        "https://warm-travesseiro-8599d9f6.netlify.app",  # alt/test site
+        "http://localhost:3000",                    # local dev
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def _startup() -> None:
@@ -19,7 +33,11 @@ def _startup() -> None:
 
 @app.get("/")
 def root() -> Dict[str, Any]:
-    return {"ok": True, "service": "Rugs Monitor API", "endpoints": ["/health", "/stats/tail", "/stats/recent", "/docs"]}
+    return {
+        "ok": True,
+        "service": "Rugs Monitor API",
+        "endpoints": ["/health", "/stats/tail", "/stats/recent", "/docs"],
+    }
 
 @app.get("/health")
 def health() -> Dict[str, bool]:
